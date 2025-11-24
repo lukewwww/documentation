@@ -18,7 +18,7 @@ The content of the template is shown below:
 
 Some highlights in case you are starting the container using other cloud services:
 
-* Use the image link of Crynux Node to start the container:&#x20;
+* Use the image link of Crynux Node to start the container:
 
 `ghcr.io/crynux-network/crynux-node:latest`
 
@@ -47,14 +47,20 @@ In this case, the URL of the WebUI is `http://213.181.122.2:40021`. Just open it
 
 ## 3. Prepare the wallet
 
-[Use an SSH connection](https://vast.ai/docs/gpu-instances/ssh?_gl=1*ye4y7p*_gcl_au*OTc1MTUwMTIwLjE3MTY2MTA3OTkuMzAyNTUxNjAzLjE3MTY2NDIxMzkuMTcxNjY0MjEzOA..*_ga*NTc0NjQxMDIwLjE3MTY2MTA3OTk.*_ga_DG15WC8WXG*MTcxNjYxMDc5OS4xLjEuMTcxNjY0Nzg1MC42MC4wLjA.) to login to the Docker container you started, and set the private key in the config file at:`/app/config/config.yml`, and the field name is `privkey`:
+{% hint style="danger" %}
+#### Security Warning: Private key on third‑party machines
 
-```
-ethereum:
-  privkey: ""
-```
+When you run a node on Vast, your Docker container is not on your own hardware. It runs on GPU machines owned and operated by other individual Vast users. Any private key you put into the container is therefore stored on those third‑party machines, where a malicious host or malware on the host system could read the key and immediately transfer all funds controlled by it.
 
-After you filled the value of the private key, restart the Docker container.
+\
+To reduce potential loss, you **MUST** set up a **Beneficial Address** so that all rewards and returned stake are paid to a separate cold wallet, and only keep the minimum necessary balance on the hot key used by the node. Please find the details of the Beneficial Address in the docs below:
+
+[Private Key Security](../private-key-security.md)
+{% endhint %}
+
+A wallet with enough test tokens must be provided to the node. If this is the first time you start a node, click the "Create New Wallet" button and follow the instructions to create a new wallet and finish the backup of the private keys.
+
+<figure><img src="../../.gitbook/assets/7b8bf34cf8eb9b7e850aad28e44b587.png" alt=""><figcaption></figcaption></figure>
 
 ## 4. Get the test CNX tokens from the Discord Server
 
@@ -86,4 +92,4 @@ Now the Node is fully up and running. You could just leave it there to run tasks
 
 The Node could be paused or stopped at any time by clicking the control buttons. If the node is in the middle of running a task, after clicking the buttons, the node will go into the "pending" status and continue with the running task. When the task is finished, the node will pause/stop automatically.
 
-The difference between pausing and stopping is that pausing will not cause the staked CNX tokens to be returned, so that the transaction costs less gas fee than stopping. If you have a plan of going back, you could use pausing rather than stopping.&#x20;
+The difference between pausing and stopping is that pausing will not cause the staked CNX tokens to be returned, so that the transaction costs less gas fee than stopping. If you have a plan of going back, you could use pausing rather than stopping.
