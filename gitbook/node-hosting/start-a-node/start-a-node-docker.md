@@ -123,18 +123,6 @@ or simply download the files from GitHub:
 
 [https://github.com/crynux-network/crynux-node-docker-compose/tree/near](https://github.com/crynux-network/crynux-node-docker-compose/tree/near)
 {% endtab %}
-
-{% tab title="Kaspa users" %}
-you can use Git to clone the branch for Near of the following repository:
-
-```bash
-$ git clone -b kasplex https://github.com/crynux-network/crynux-node-docker-compose.git
-```
-
-or simply download the files from GitHub:
-
-[https://github.com/crynux-network/crynux-node-docker-compose/tree/kasplex](https://github.com/crynux-network/crynux-node-docker-compose/tree/kasplex)
-{% endtab %}
 {% endtabs %}
 
 #### b. Start the container

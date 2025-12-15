@@ -16,13 +16,23 @@ The content of the template is shown below:
 
 <figure><img src="../../.gitbook/assets/e2e99275247966afe9197eee2f70218.png" alt=""><figcaption></figcaption></figure>
 
-Some highlights in case you are starting the container using other cloud services:
+{% hint style="success" %}
+**Please use the latest version tag to start the container**
 
-* Use the image link of Crynux Node to start the container:
+you could find the available tags at:&#x20;
 
-`ghcr.io/crynux-network/crynux-node:latest`
+[**https://github.com/crynux-network/crynux-node/pkgs/container/crynux-node/versions**](https://github.com/crynux-network/crynux-node/pkgs/container/crynux-node/versions)
 
-* Expose port `7412` for WebUI
+
+
+For example, if you want to run the 2.8.0 version of the Crynux Node under Near Network, use the image link below:
+
+`ghcr.io/crynux-network/crynux-node:2.8.0-near`
+{% endhint %}
+
+Some other config options that worth highlighting:
+
+* Expose port `7412` for WebUI.
 * Use the default docker ENTRYPOINT to start the container. Do not use interactive shells.
 
 After selecting your desired hardware, and starting the instance, find the instance in the `INSTANCES` tab:

@@ -26,7 +26,19 @@ Select the GPU that fits your need. And then click "Configure".
 
 <figure><img src="../../.gitbook/assets/step_3.png" alt=""><figcaption></figcaption></figure>
 
-You could adjust the tag name in the "Image name" field to use a newer version of the Crynux Node, or select a different blockchain network such as `dymension` and `kasplex`.
+{% hint style="success" %}
+**Please use the latest version tag to start the container**
+
+you could find the available tags at:&#x20;
+
+[**https://github.com/crynux-network/crynux-node/pkgs/container/crynux-node/versions**](https://github.com/crynux-network/crynux-node/pkgs/container/crynux-node/versions)
+
+
+
+For example, if you want to run the 2.8.0 version of the Crynux Node under Near Network, use the image link below:
+
+`ghcr.io/crynux-network/crynux-node:2.8.0-near`
+{% endhint %}
 
 Expose port `7412` for the remote access of the WebUI.
 
@@ -86,4 +98,4 @@ Now the Node is fully up and running. You could just leave it there to run tasks
 
 The Node could be paused or stopped at any time by clicking the control buttons. If the node is in the middle of running a task, after clicking the buttons, the node will go into the "pending" status and continue with the running task. When the task is finished, the node will pause/stop automatically.
 
-The difference between pausing and stopping is that pausing will not cause the staked CNX tokens to be returned, so that the transaction costs less gas fee than stopping. If you have a plan of going back, you could use pausing rather than stopping.&#x20;
+The difference between pausing and stopping is that pausing will not cause the staked CNX tokens to be returned, so that the transaction costs less gas fee than stopping. If you have a plan of going back, you could use pausing rather than stopping.
