@@ -10,19 +10,22 @@ from openai import OpenAI
 client = OpenAI(
     base_url="https://bridge.crynux.io/v1/llm",
     api_key="q3hXHA_8O0LuGJ1_tou4_KamMlQqAo-aYwyAIDttdmI=", # For public demonstration only, strict rate limit applied.
-    timeout=180,
+    timeout=60,
     max_retries=1,
 )
 
 res = client.chat.completions.create(
-    model="Qwen/Qwen2.5-7B",
+    model="Qwen/Qwen2.5-7B-Instruct",
     messages=[
         {
             "role": "user",
             "content": "What is the capital of France?",
         },
     ],
-    stream=False
+    stream=False,
+    extra_body={
+        "vram_limit": 24,
+    }
 )
 
 print(res)
@@ -36,14 +39,14 @@ import OpenAI from "openai";
 const client = new OpenAI({
   baseURL: "https://bridge.crynux.io/v1/llm",
   apiKey: "q3hXHA_8O0LuGJ1_tou4_KamMlQqAo-aYwyAIDttdmI=", // For public demonstration only, strict rate limit applied.
-  timeout: 180000,
+  timeout: 60000,
   maxRetries: 1,
 });
 
 async function main() {
   try {
     const chatCompletion = await client.chat.completions.create({
-      model: "Qwen/Qwen2.5-7B",
+      model: "Qwen/Qwen2.5-7B-Instruct",
       messages: [
         {
           role: "user",
@@ -51,6 +54,7 @@ async function main() {
         },
       ],
       stream: false,
+      vram_limit: 24,
     });
     console.log("Chat completion response:", chatCompletion);
 
@@ -70,6 +74,29 @@ This code is standard for invoking OpenAI models through their API. The only mod
 {% embed url="https://codepen.io/Luke-Weber/pen/RNWaOgL" %}
 
 The API, provided by the official Crynux Bridge, supports both OpenAI-compliant `/completions` and `/chat/completions` endpoints. Features like streaming, tool-calling, and numerous other configuration options are also supported. For a comprehensive list of supported features, please refer to the[ Crynux Bridge documentation](../crynux-bridge.md).
+
+
+## GPU VRAM Requirement
+
+The `vram_limit` parameter specifies the minimum VRAM required to execute the task. Crynux Network uses this value to route the task to a node with sufficient GPU memory. This requirement is directly tied to the model size; for example, the 8B model used in the example runs comfortably on a 24GB card.
+
+If this parameter is omitted, the Crynux Bridge defaults to `24` (GB). Therefore, when using a model larger than 8B that requires more memory, you must explicitly set `vram_limit` to a higher value. Failure to do so may result in the task being assigned to an insufficient node, causing a timeout or failure.
+
+## Advanced Usage
+
+For more advanced use cases like Tool Calling, Structured Output, and integrations with LangChain/LangGraph, please refer to the following guides:
+
+{% content-ref url="tool-use.md" %}
+[Tool Use/Function Calling](./tool-use.md)
+{% endcontent-ref %}
+
+{% content-ref url="structured-ouput.md" %}
+[Structured Output](./structured-ouput.md)
+{% endcontent-ref %}
+
+{% content-ref url="langchain.md" %}
+[LangGraph/LangChain](./langchain.md)
+{% endcontent-ref %}
 
 The API Key in the example code is for public demonstration purposes only and has a strict rate limit, making it unsuitable for production environments. To use the Crynux Network in production, choose one of the following methods:
 
