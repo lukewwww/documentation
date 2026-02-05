@@ -2,7 +2,7 @@
 
 Crynux theoretically supports any model that can be executed by the Hugging Face `transformers` library. To use a specific model, you simply need to specify its Hugging Face model ID in the task configuration. The Crynux Nodes will then automatically fetch the model from Hugging Face and execute the task.
 
-The primary practical limitation on the number and size of models Crynux can support is the maximum available VRAM on the nodes within the Crynux Network. Currently, the nodes with the largest VRAM capacity offer 24GB.
+The primary practical limitation on the number and size of models Crynux can support is the maximum available VRAM on the nodes within the Crynux Network. Currently, the nodes with the largest VRAM capacity offer 80GB.
 
 For example, below is a list of popular models that can be used in the Crynux Network. Each entry includes the model name and a direct link to its Hugging Face repository.
 
