@@ -28,9 +28,14 @@ To ensure the fastest possible task execution, the selection algorithm first con
 
 #### Model Storage
 
-Initially, the selection is restricted exclusively to nodes that have the model stored locally. Crynux Network uses an on-chain registry to determine which nodes have already downloaded the model. If idle nodes are available in this group, one is selected randomly based on the selection probability factors described below.
+When selecting nodes for a task, the system prioritizes nodes that already have the required models stored locally. Crynux Network uses a registry to determine which nodes have already downloaded the model, and applies the following logic:
 
-If all such nodes are busy, the selection expands to other nodes that meet the task criteria. This event also triggers the model distribution process, prompting an equivalent number of other eligible nodes to begin downloading the model. For more details, refer to the following document:
+- If **at least one** eligible node has the required models locally, the selection is **restricted** to only those nodes with local models. Nodes without local models are excluded from the candidate pool entirely.
+- If **no** eligible nodes have the required models locally, the selection falls back to the full set of eligible nodes using only the base selection probability factors (staking and QoS).
+
+This ensures that tasks are preferentially routed to nodes that can begin execution immediately without downloading models, reducing startup latency for applications.
+
+Additionally, to ensure that enough nodes have in-demand models available, the system triggers a **model pre-download mechanism** every time a task starts. When fewer than 3 available nodes have a required model, additional eligible nodes are prompted to download it proactively. For more details, refer to the following document:
 
 {% content-ref url="model-distribution.md" %}
 [model-distribution.md](model-distribution.md)
@@ -40,15 +45,15 @@ The process is illustrated in the following diagram:
 
 ```mermaid
 graph TD
-    A[New Task] --> B{Idle node with local model available?};
-    B -- Yes --> C[Select a node from this group];
-    C --> D[Dispatch Task];
-    B -- No --> E{Other eligible nodes available?};
-    E -- Yes --> F[Select a node from this group];
-    F --> G[Dispatch Task];
-    F --> H[Trigger Model Distribution];
-    H --> I[Prompt other eligible nodes to download the model];
-    E -- No --> J[Enqueue Task];
+    A[New Task] --> B{Any eligible node with local model?};
+    B -- Yes --> C[Restrict candidates to nodes with local models];
+    C --> D[Select node using weighted probability];
+    D --> E[Dispatch Task];
+    B -- No --> F{Any eligible nodes at all?};
+    F -- Yes --> G[Use all eligible nodes as candidates];
+    G --> D;
+    F -- No --> H[Enqueue Task];
+    A --> I[Trigger Model Pre-download if needed];
 ```
 
 
@@ -56,15 +61,17 @@ graph TD
 
 Once a group of candidate nodes has been identified, one node is chosen to execute the task. The selection is made through a weighted random process, where each node's probability of being chosen is proportional to a weight calculated from the factors described below. This method ensures that nodes that are better suited for the task are more likely to be selected.
 
-*1. Model in Memory*
+*1. Model Locality Boost*
 
-When a node's immediately preceding task utilized the same model required for the current one, it is highly probable the model remains in memory (VRAM). Selecting such a node circumvents the model loading process, which significantly accelerates task startup. Consequently, these nodes receive a higher selection probability.
+A task may require one or more models (e.g., a Stable Diffusion task might need a base model plus LoRA models; an LLM task typically needs a single model). The system boosts nodes based on how well their locally available models match the task's requirements.
 
-The Model in Memory score ($$M_i$$) for a node $$i$$ is defined as:
+The Model Locality Boost ($$M_i$$) for a node $$i$$ is defined as:
 
-$$
-M_i = \begin{cases} 2 & \text{if model is in memory} \\ 1 & \text{otherwise} \end{cases}
-$$
+- If the node's currently **in-use models match exactly** with the task's required models (i.e., the model is likely still in VRAM): $$M_i = 2$$
+- If the node has **some but not all** required models locally: $$M_i = 1 + \frac{matchCount}{totalRequired}$$ (between 1 and 2)
+- If the node has **none** of the required models locally: $$M_i = 1$$
+
+Selecting a node that already has the model loaded in memory circumvents the model loading process, which significantly accelerates task startup. Nodes with partial local matches also benefit from reduced download time.
 
 *2. Staking*
 
@@ -88,9 +95,12 @@ This directly ties the cost of an attack to the cost of controlling the network'
 
 A node's performance is determined by its underlying hardware; for example, GPUs with higher clock speeds execute tasks more quickly, and superior network connectivity leads to faster result submission. To encourage faster task execution, Crynux Network prioritizes faster nodes by giving them higher selection probabilities.
 
-To prevent nodes from reporting fake frequencies and GPU models, Crynux Network uses the calculated `Submission Speed Score` instead of the reported frequencies. This score evaluates nodes by comparing their speed in a task validation group. Nodes that complete the task faster receive a higher QoS score and are thus more likely to be selected for future tasks.
+To prevent nodes from reporting fake frequencies and GPU models, Crynux Network uses the measured task execution speed rather than self-reported hardware specs. The QoS system evaluates node quality through two components that operate at different time scales:
 
-Details about the QoS scores can be found in the following document:
+- **Long-term performance score** ($$Q_i$$): Within validation task groups, nodes that complete the task faster receive a higher task score. The QoS score is a rolling average of the node's most recent 50 validation task scores, normalized against the maximum possible score: $$Q_i = Q_{node} / Q_{max}$$, where $$Q_{max} = 10$$. New nodes that have not yet completed any validation tasks are assigned a default QoS probability of **0.5**.
+- **Short-term reliability** ($$H_i$$): A health multiplier (range 0 to 1) that reacts immediately to timeout failures. Each timeout sharply reduces $$H_i$$, and nodes whose $$H_i$$ drops below a threshold are temporarily excluded from task selection entirely. The multiplier recovers automatically over time and through successful task completions.
+
+Together, $$Q_i$$ captures whether a node is consistently fast, while $$H_i$$ captures whether a node is currently reliable. Details about both components can be found in the following document:
 
 {% content-ref url="quality-of-service-qos.md" %}
 [quality-of-service-qos.md](quality-of-service-qos.md)
@@ -98,26 +108,23 @@ Details about the QoS scores can be found in the following document:
 
 *4. Final Selection Weight*
 
-The final selection weight for a node is calculated by combining the scores from the factors above.
+The final selection weight for a node is calculated by combining all the scores from the factors above.
 
-To ensure a node is both secure (high stake) and performant (high QoS), the Staking and QoS scores are combined using the harmonic mean (`2 * S_i * Q_i / (S_i + Q_i)`). This method penalizes imbalance; a node cannot compensate for a very low QoS score with a high stake, or vice-versa.
-
-The final weight `W_i` is calculated by multiplying this harmonic mean by the `Model in Memory` score (`M_i`). To normalize the final weight to a value between 0 and 1, the result is divided by 2 (the maximum possible value for `M_i`).
-
-The simplified formula is defined as:
+To ensure a node is both secure (high stake) and performant (high QoS), the Staking and long-term QoS scores are first combined using the harmonic mean. This method penalizes imbalance; a node cannot compensate for a very low QoS score with a high stake, or vice-versa. The result is then multiplied by the Model Locality Boost and the QoS health multiplier.
 
 $$
-W_i = \frac{M_i \cdot S_i \cdot Q_i}{S_i + Q_i}
+W_i = \frac{M_i \cdot S_i \cdot Q_i \cdot H_i}{S_i + Q_i}
 $$
 
 Where:
 
 *   $$W_i$$ is the final selection weight for node $$i$$.
-*   $$M_i$$ is the node's Model in Memory score.
-*   $$S_i$$ is the node's Staking Score.
-*   $$Q_i$$ is the node's QoS Score.
+*   $$M_i$$ is the node's Model Locality Boost (1 to 2).
+*   $$S_i$$ is the node's Staking Score (0 to 1).
+*   $$Q_i$$ is the node's long-term QoS Score (0 to 1).
+*   $$H_i$$ is the node's short-term QoS health multiplier (0 to 1).
 
-The probability of a node being selected is then its individual weight divided by the sum of the weights of all candidate nodes.
+The probability of a node being selected is then its individual weight divided by the sum of the weights of all candidate nodes. Nodes are selected using weighted random sampling — higher-weighted nodes are more likely to be selected, but any eligible node can be chosen.
 
 If there are not enough candidate nodes to be selected from, the task will be added to the task queue and wait for more nodes to become available.
 
